@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Settings, Edit, Users, Video, Tag, Grid, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SettingsDialog } from "@/components/SettingsDialog";
+import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 interface VideoItem {
   id: string;
@@ -60,6 +62,8 @@ const mockTaggedVideos: VideoItem[] = [
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState<"videos" | "shorts" | "tagged">("videos");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const filteredVideos = activeTab === "videos" 
     ? mockVideos.filter(v => !v.isShort)
@@ -110,14 +114,14 @@ const Profile = () => {
             </div>
           </div>
           
-          <Button variant="secondary" size="icon">
+          <Button variant="secondary" size="icon" onClick={() => setShowSettings(true)}>
             <Settings className="h-4 w-4" />
           </Button>
         </div>
         
         {/* Action Buttons */}
         <div className="flex space-x-3 mt-4">
-          <Button variant="secondary" className="flex-1">
+          <Button variant="secondary" className="flex-1" onClick={() => setShowEditProfile(true)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Profile
           </Button>
@@ -241,6 +245,16 @@ const Profile = () => {
           </div>
         )}
       </div>
+
+      <SettingsDialog 
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
+      <EditProfileDialog 
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+      />
     </div>
   );
 };
