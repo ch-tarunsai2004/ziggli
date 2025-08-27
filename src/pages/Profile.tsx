@@ -1,47 +1,38 @@
 import { useState } from "react";
-import { Settings, Edit, Users, Video, Tag, Grid, Play } from "lucide-react";
+import { Edit, Users, Video, Grid, Tag, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { SettingsDialog } from "@/components/SettingsDialog";
-import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import SettingsDialog from "@/components/SettingsDialog";
+import EditProfileDialog from "@/components/EditProfileDialog";
 
-interface VideoItem {
-  id: string;
-  thumbnail: string;
-  title: string;
-  views: string;
-  duration: string;
-  isShort: boolean;
-}
-
-const mockVideos: VideoItem[] = [
+const mockVideos = [
   {
     id: "1",
     thumbnail: "/api/placeholder/300/200",
-    title: "React Tutorial Series",
-    views: "125K",
+    title: "Intro to React",
+    views: "15K",
     duration: "12:34",
     isShort: false,
   },
   {
-    id: "2", 
+    id: "2",
     thumbnail: "/api/placeholder/300/200",
-    title: "CSS Quick Tip",
-    views: "89K",
-    duration: "0:45",
+    title: "CSS Tips & Tricks",
+    views: "10K",
+    duration: "8:20",
     isShort: true,
   },
   {
     id: "3",
-    thumbnail: "/api/placeholder/300/200", 
-    title: "Live Coding Stream",
-    views: "45K",
+    thumbnail: "/api/placeholder/300/200",
+    title: "Advanced TypeScript",
+    views: "5K",
     duration: "1:23:45",
     isShort: false,
   },
 ];
 
-const mockTaggedVideos: VideoItem[] = [
+const mockTaggedVideos = [
   {
     id: "t1",
     thumbnail: "/api/placeholder/300/200",
@@ -52,7 +43,7 @@ const mockTaggedVideos: VideoItem[] = [
   },
   {
     id: "t2",
-    thumbnail: "/api/placeholder/300/200", 
+    thumbnail: "/api/placeholder/300/200",
     title: "Design Review Session",
     views: "23K",
     duration: "25:12",
@@ -60,16 +51,23 @@ const mockTaggedVideos: VideoItem[] = [
   },
 ];
 
+// Example profile data; replace with your state/props/logic
+const user = {
+  avatar_url: "", // Set to empty string if no avatar uploaded
+  displayName: "Your Username", // Fallback for initials
+};
+
 const Profile = () => {
   const [activeTab, setActiveTab] = useState<"videos" | "shorts" | "tagged">("videos");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
-  const filteredVideos = activeTab === "videos" 
-    ? mockVideos.filter(v => !v.isShort)
-    : activeTab === "shorts"
-    ? mockVideos.filter(v => v.isShort) 
-    : mockTaggedVideos;
+  const filteredVideos =
+    activeTab === "videos"
+      ? mockVideos.filter((v) => !v.isShort)
+      : activeTab === "shorts"
+      ? mockVideos.filter((v) => v.isShort)
+      : mockTaggedVideos;
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,20 +76,39 @@ const Profile = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-6">
             <div className="w-24 h-24 rounded-full bg-white/20 p-1">
-              <img
-                src="/api/placeholder/100/100"
-                alt="Profile"
-                className="w-full h-full object-cover rounded-full border-2 border-white"
-              />
+              <Avatar className="w-full h-full">
+                <AvatarImage
+                  src={user.avatar_url || "/api/placeholder/100/100"}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-full border-2 border-white"
+                />
+                <AvatarFallback>
+                  {user.displayName
+                    ? user.displayName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                    : (
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="12" fill="#ccc" />
+                        <path
+                          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                          fill="#fff"
+                        />
+                      </svg>
+                    )}
+                </AvatarFallback>
+              </Avatar>
             </div>
-            
+
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-2">YourUsername</h1>
+              <h1 className="text-2xl font-bold mb-2">{user.displayName}</h1>
               <p className="text-white/90 mb-4">
-                Content creator passionate about tech, design, and coding tutorials. 
+                Content creator passionate about tech, design, and coding tutorials.
                 Building the future one video at a time! 🚀
               </p>
-              
+
               {/* Stats */}
               <div className="flex space-x-6 mb-4">
                 <div className="text-center">
@@ -113,12 +130,12 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          
+
           <Button variant="secondary" size="icon" onClick={() => setShowSettings(true)}>
             <Settings className="h-4 w-4" />
           </Button>
         </div>
-        
+
         {/* Action Buttons */}
         <div className="flex space-x-3 mt-4">
           <Button variant="secondary" className="flex-1" onClick={() => setShowEditProfile(true)}>
@@ -142,7 +159,7 @@ const Profile = () => {
             data-active={activeTab === "videos"}
           >
             <Video className="h-4 w-4 mr-2" />
-            Videos ({mockVideos.filter(v => !v.isShort).length})
+            Videos ({mockVideos.filter((v) => !v.isShort).length})
           </Button>
           <Button
             variant={activeTab === "shorts" ? "default" : "ghost"}
@@ -151,7 +168,7 @@ const Profile = () => {
             data-active={activeTab === "shorts"}
           >
             <Grid className="h-4 w-4 mr-2" />
-            Shorts ({mockVideos.filter(v => v.isShort).length})
+            Shorts ({mockVideos.filter((v) => v.isShort).length})
           </Button>
           <Button
             variant={activeTab === "tagged" ? "default" : "ghost"}
@@ -187,11 +204,8 @@ const Profile = () => {
                   <p className="text-white/80 text-xs">{video.views} views</p>
                 </div>
                 <div className="absolute top-2 right-2">
-                  <Play className="h-4 w-4 text-white" />
+                  <Video className="h-4 w-4 text-white" />
                 </div>
-                <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
-                  Short
-                </Badge>
               </div>
             ))}
           </div>
@@ -212,17 +226,17 @@ const Profile = () => {
                     {video.duration}
                   </div>
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <Play className="h-12 w-12 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                    <Video className="h-12 w-12 text-white opacity-0 hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold line-clamp-2 mb-2">{video.title}</h3>
                   <p className="text-sm text-muted-foreground">{video.views} views</p>
                   {activeTab === "tagged" && (
-                    <Badge variant="secondary" className="mt-2 text-xs">
+                    <Button variant="secondary" className="mt-2 text-xs">
                       <Tag className="h-3 w-3 mr-1" />
                       Collaboration
-                    </Badge>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -246,15 +260,9 @@ const Profile = () => {
         )}
       </div>
 
-      <SettingsDialog 
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
+      <SettingsDialog isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
-      <EditProfileDialog 
-        isOpen={showEditProfile}
-        onClose={() => setShowEditProfile(false)}
-      />
+      <EditProfileDialog isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} />
     </div>
   );
 };
