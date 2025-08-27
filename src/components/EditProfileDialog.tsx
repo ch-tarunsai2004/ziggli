@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Camera, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface EditProfileDialogProps {
   isOpen: boolean;
@@ -13,24 +16,114 @@ interface EditProfileDialogProps {
 }
 
 export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState({
-    username: "YourUsername",
-    displayName: "Your Display Name",
-    bio: "Content creator passionate about tech, design, and coding tutorials. Building the future one video at a time! 🚀",
+    username: "",
+    displayName: "",
+    bio: "",
     website: "",
     location: "",
-    avatar: "/api/placeholder/100/100"
+    birthday: "",
+    avatar: ""
   });
 
-  const handleSave = () => {
-    // Add save logic here
-    console.log("Saving profile:", profile);
-    onClose();
+  useEffect(() => {
+    if (user && isOpen) {
+      fetchProfile();
+    }
+  }, [user, isOpen]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      toast.error('Failed to load profile');
+      return;
+    }
+
+    if (data) {
+      setProfile({
+        username: data.username || '',
+        displayName: data.full_name || '',
+        bio: data.bio || '',
+        website: '',
+        location: '',
+        birthday: '',
+        avatar: data.avatar_url || ''
+      });
+    }
+  };
+
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setProfile({ ...profile, avatar: data.publicUrl });
+      toast.success('Avatar uploaded successfully!');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          username: profile.username,
+          full_name: profile.displayName,
+          bio: profile.bio,
+          avatar_url: profile.avatar,
+        });
+
+      if (error) throw error;
+
+      toast.success('Profile updated successfully!');
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAvatarChange = () => {
-    // Add avatar change logic here
-    console.log("Change avatar");
+    document.getElementById('avatar-upload')?.click();
   };
 
   return (
@@ -45,20 +138,30 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={profile.avatar} alt="Profile" />
-                <AvatarFallback>YU</AvatarFallback>
+                <AvatarImage src={profile.avatar || "/api/placeholder/100/100"} alt="Profile" />
+                <AvatarFallback>
+                  {profile.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                </AvatarFallback>
               </Avatar>
               <Button
                 size="sm"
                 variant="secondary"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
                 onClick={handleAvatarChange}
+                disabled={uploading}
               >
                 <Camera className="h-4 w-4" />
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleAvatarChange}>
-              Change Profile Photo
+            <input
+              type="file"
+              id="avatar-upload"
+              accept="image/*"
+              onChange={uploadAvatar}
+              style={{ display: 'none' }}
+            />
+            <Button variant="outline" size="sm" onClick={handleAvatarChange} disabled={uploading}>
+              {uploading ? 'Uploading...' : 'Change Profile Photo'}
             </Button>
           </div>
 
@@ -119,6 +222,16 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
                 placeholder="Where are you based?"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="birthday">Birthday</Label>
+              <Input
+                id="birthday"
+                type="date"
+                value={profile.birthday}
+                onChange={(e) => setProfile({ ...profile, birthday: e.target.value })}
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -126,9 +239,9 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
             <Button variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={handleSave}>
+            <Button className="flex-1" onClick={handleSave} disabled={loading}>
               <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

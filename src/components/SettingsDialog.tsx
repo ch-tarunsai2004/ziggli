@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -13,23 +15,30 @@ interface SettingsDialogProps {
 
 export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
   const { theme, setTheme } = useTheme();
+  const { signOut } = useAuth();
   const [notifications, setNotifications] = useState(true);
 
-  const handleLogout = () => {
-    // Add logout logic here
-    console.log("Logging out...");
-    onClose();
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      onClose();
+    } catch (error) {
+      toast.error('Failed to log out');
+    }
   };
 
   const handleChangeUsername = () => {
     // Add change username logic here
     console.log("Change username");
+    toast.info('Username change feature coming soon!');
     onClose();
   };
 
   const handleSwitchAccount = () => {
     // Add switch account logic here
     console.log("Switch account");
+    toast.info('Account switching feature coming soon!');
     onClose();
   };
 
