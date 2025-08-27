@@ -20,17 +20,17 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
     
-    /* Social media inspired colors */
-    --primary: 262 83% 58%; /* Instagram purple */
+    /* Sunrise orange and cream color palette */
+    --primary: 25 95% 55%; /* Sunrise orange */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 45 60% 92%; /* Cream */
+    --secondary-foreground: 25 20% 15%;
     
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 45 40% 94%; /* Light cream */
+    --muted-foreground: 25 15% 45%;
     
-    --accent: 315 100% 65%; /* Instagram pink */
+    --accent: 20 100% 60%; /* Deep orange */
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
@@ -39,15 +39,15 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 262 83% 58%;
+    --ring: 25 95% 55%;
     
-    /* Instagram-inspired gradients */
-    --gradient-instagram: linear-gradient(45deg, hsl(262 83% 58%), hsl(315 100% 65%), hsl(25 100% 65%));
-    --gradient-story: linear-gradient(45deg, hsl(315 100% 65%), hsl(262 83% 58%), hsl(25 100% 65%));
-    --gradient-subtle: linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 96%));
+    /* Sunrise orange gradients */
+    --gradient-instagram: linear-gradient(45deg, hsl(25 95% 55%), hsl(20 100% 60%), hsl(35 90% 65%));
+    --gradient-story: linear-gradient(45deg, hsl(20 100% 60%), hsl(25 95% 55%), hsl(35 90% 65%));
+    --gradient-subtle: linear-gradient(135deg, hsl(45 60% 96%), hsl(45 40% 94%));
     
     /* Shadows */
-    --shadow-story: 0 4px 12px hsl(262 83% 58% / 0.3);
+    --shadow-story: 0 4px 12px hsl(25 95% 55% / 0.3);
     --shadow-video: 0 8px 32px hsl(0 0% 0% / 0.1);
     --shadow-float: 0 20px 60px hsl(0 0% 0% / 0.15);
     
@@ -83,17 +83,17 @@ All colors MUST be HSL.
     --popover: 0 0% 11%;
     --popover-foreground: 0 0% 98%;
     
-    /* Social media inspired colors - dark mode */
-    --primary: 262 83% 65%; /* Lighter Instagram purple for dark mode */
+    /* Sunrise orange colors - dark mode */
+    --primary: 25 95% 65%; /* Lighter sunrise orange for dark mode */
     --primary-foreground: 0 0% 9%;
     
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 25 20% 15%; /* Dark cream */
+    --secondary-foreground: 45 60% 90%;
     
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 25 15% 15%;
+    --muted-foreground: 45 40% 65%;
     
-    --accent: 315 100% 70%; /* Lighter Instagram pink for dark mode */
+    --accent: 20 100% 70%; /* Lighter deep orange for dark mode */
     --accent-foreground: 0 0% 9%;
     
     --destructive: 0 62% 50%;
@@ -102,17 +102,17 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 262 83% 65%;
+    --ring: 25 95% 65%;
     
     /* Sidebar colors for dark mode */
     --sidebar-background: 0 0% 9%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary: 25 95% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent: 25 15% 15%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 262 83% 65%;
+    --sidebar-border: 25 10% 15%;
+    --sidebar-ring: 25 95% 65%;
   }
 }
 
