@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Users, Video, Grid, Tag, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import SettingsDialog from "@/components/SettingsDialog";
 import EditProfileDialog from "@/components/EditProfileDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const mockVideos = [
   {
@@ -51,16 +52,33 @@ const mockTaggedVideos = [
   },
 ];
 
-// Example profile data; replace with your state/props/logic
-const user = {
-  avatar_url: "", // Set to empty string if no avatar uploaded
-  displayName: "Your Username", // Fallback for initials
-};
+
 
 const Profile = () => {
+  const { profile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<"videos" | "shorts" | "tagged">("videos");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Fallback timeout to prevent infinite loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('Profile loading timeout - showing fallback');
+        setLoadingTimeout(true);
+      }
+    }, 3000); // 3 second timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
+
+  // Reset timeout when loading changes
+  useEffect(() => {
+    if (!loading) {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
 
   const filteredVideos =
     activeTab === "videos"
@@ -68,6 +86,64 @@ const Profile = () => {
       : activeTab === "shorts"
       ? mockVideos.filter((v) => v.isShort)
       : mockTaggedVideos;
+
+  // Get display name from profile or fallback to username or default
+  const getDisplayName = () => {
+    if (profile?.full_name) return profile.full_name;
+    if (profile?.username) return profile.username;
+    return "Your Username";
+  };
+
+  // Get avatar URL from profile or fallback
+  const getAvatarUrl = () => {
+    if (profile?.avatar_url) return profile.avatar_url;
+    return "";
+  };
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    const displayName = getDisplayName();
+    if (displayName && displayName !== "Your Username") {
+      return displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase();
+    }
+    return "U";
+  };
+
+  if (loading && !loadingTimeout) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show fallback content if loading times out
+  if (loadingTimeout) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold mb-2">Loading Timeout</h2>
+          <p className="text-muted-foreground mb-4">
+            The profile is taking longer than expected to load.
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,36 +154,21 @@ const Profile = () => {
             <div className="w-24 h-24 rounded-full bg-white/20 p-1">
               <Avatar className="w-full h-full">
                 <AvatarImage
-                  src={user.avatar_url || "/api/placeholder/100/100"}
+                  src={getAvatarUrl() || "/api/placeholder/100/100"}
                   alt="Profile"
                   className="w-full h-full object-cover rounded-full border-2 border-white"
                 />
                 <AvatarFallback>
-                  {user.displayName
-                    ? user.displayName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                    : (
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="12" fill="#ccc" />
-                        <path
-                          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-                          fill="#fff"
-                        />
-                      </svg>
-                    )}
+                  {getInitials()}
                 </AvatarFallback>
               </Avatar>
             </div>
 
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-2">{user.displayName}</h1>
-              <p className="text-white/90 mb-4">
-                Content creator passionate about tech, design, and coding tutorials.
-                Building the future one video at a time! 🚀
-              </p>
+              <h1 className="text-2xl font-bold mb-2">{getDisplayName()}</h1>
+                              <p className="text-white/90 mb-4">
+                  {profile?.bio || "Content creator passionate about tech, design, and coding tutorials. Building the future one video at a time! 🚀"}
+                </p>
 
               {/* Stats */}
               <div className="flex space-x-6 mb-4">

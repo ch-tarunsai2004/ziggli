@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Camera, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,10 @@ interface EditProfileDialogProps {
 }
 
 export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) => {
-  const { user } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [profile, setProfile] = useState({
+  const [formData, setFormData] = useState({
     username: "",
     displayName: "",
     bio: "",
@@ -30,37 +30,18 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
   });
 
   useEffect(() => {
-    if (user && isOpen) {
-      fetchProfile();
-    }
-  }, [user, isOpen]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      toast.error('Failed to load profile');
-      return;
-    }
-
-    if (data) {
-      setProfile({
-        username: data.username || '',
-        displayName: data.full_name || '',
-        bio: data.bio || '',
-        website: '',
-        location: '',
-        birthday: '',
-        avatar: data.avatar_url || ''
+    if (profile && isOpen) {
+      setFormData({
+        username: profile.username || "",
+        displayName: profile.full_name || "",
+        bio: profile.bio || "",
+        website: "",
+        location: "",
+        birthday: "",
+        avatar: profile.avatar_url || ""
       });
     }
-  };
+  }, [profile, isOpen]);
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -71,26 +52,62 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       }
 
       const file = event.target.files[0];
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select an image file');
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user?.id}.${fileExt}`;
       const filePath = `${user?.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Starting avatar upload...', { filePath, fileSize: file.size });
+
+      // Add timeout to prevent infinite uploading
+      const uploadPromise = supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Upload timeout - please try again')), 15000); // 15 second timeout
+      });
+
+      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
       if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
         throw uploadError;
       }
+
+      console.log('Avatar upload successful, getting public URL...');
 
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      setProfile({ ...profile, avatar: data.publicUrl });
+      if (!data?.publicUrl) {
+        throw new Error('Failed to get public URL for uploaded image');
+      }
+
+      console.log('Avatar upload complete:', data.publicUrl);
+      setFormData({ ...formData, avatar: data.publicUrl });
       toast.success('Avatar uploaded successfully!');
+      
+      // Reset the file input
+      event.target.value = '';
+      
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Avatar upload error:', error);
+      toast.error(error.message || 'Failed to upload avatar');
+      
+      // Reset the file input on error
+      event.target.value = '';
     } finally {
       setUploading(false);
     }
@@ -100,22 +117,29 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
     if (!user) return;
     
     setLoading(true);
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Save operation timeout - forcing loading to false');
+      setLoading(false);
+      toast.error('Save operation timed out. Please try again.');
+    }, 10000); // 10 second timeout
+    
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          username: profile.username,
-          full_name: profile.displayName,
-          bio: profile.bio,
-          avatar_url: profile.avatar,
-        });
+      const { error } = await updateProfile({
+        username: formData.username,
+        full_name: formData.displayName,
+        bio: formData.bio,
+        avatar_url: formData.avatar,
+      });
 
       if (error) throw error;
 
+      clearTimeout(timeoutId);
       toast.success('Profile updated successfully!');
       onClose();
     } catch (error: any) {
+      clearTimeout(timeoutId);
       toast.error(error.message);
     } finally {
       setLoading(false);
@@ -131,6 +155,9 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>
+            Update your profile information and customize your appearance.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -138,9 +165,9 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={profile.avatar || "/api/placeholder/100/100"} alt="Profile" />
+                <AvatarImage src={formData.avatar || "/api/placeholder/100/100"} alt="Profile" />
                 <AvatarFallback>
-                  {profile.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  {formData.displayName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -171,8 +198,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
-                value={profile.username}
-                onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 placeholder="Enter username"
               />
             </div>
@@ -181,8 +208,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Label htmlFor="displayName">Display Name</Label>
               <Input
                 id="displayName"
-                value={profile.displayName}
-                onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                 placeholder="Enter display name"
               />
             </div>
@@ -191,14 +218,14 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Label htmlFor="bio">Bio</Label>
               <Textarea
                 id="bio"
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 placeholder="Tell people about yourself"
                 className="min-h-[80px] resize-none"
                 maxLength={150}
               />
               <p className="text-xs text-muted-foreground text-right">
-                {profile.bio.length}/150
+                {formData.bio.length}/150
               </p>
             </div>
 
@@ -206,8 +233,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Label htmlFor="website">Website</Label>
               <Input
                 id="website"
-                value={profile.website}
-                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 placeholder="https://yourwebsite.com"
                 type="url"
               />
@@ -217,8 +244,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
-                value={profile.location}
-                onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="Where are you based?"
               />
             </div>
@@ -228,8 +255,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
               <Input
                 id="birthday"
                 type="date"
-                value={profile.birthday}
-                onChange={(e) => setProfile({ ...profile, birthday: e.target.value })}
+                value={formData.birthday}
+                onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
               />
             </div>
           </div>
@@ -249,3 +276,5 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
     </Dialog>
   );
 };
+
+export default EditProfileDialog;

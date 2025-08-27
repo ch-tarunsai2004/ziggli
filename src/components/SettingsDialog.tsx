@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Moon, Sun, LogOut, User, Users, Shield, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "next-themes";
@@ -47,6 +47,9 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>
+            Manage your account settings and preferences.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -132,3 +135,5 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
     </Dialog>
   );
 };
+
+export default SettingsDialog;
