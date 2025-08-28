@@ -113,6 +113,13 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
     setLoading(true);
     
     try {
+      console.log('Saving profile with data:', {
+        username: formData.username,
+        full_name: formData.displayName,
+        bio: formData.bio,
+        avatar_url: formData.avatar,
+      });
+
       const { error } = await updateProfile({
         username: formData.username,
         full_name: formData.displayName,
@@ -120,11 +127,12 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
         avatar_url: formData.avatar,
       });
 
-      if (error) throw error;
-      
-      // Force a profile refresh to ensure UI updates
-      await refreshProfile();
-      
+      if (error) {
+        console.error('Profile update failed:', error);
+        throw error;
+      }
+
+      console.log('Profile updated successfully');
       toast.success('Profile updated successfully!');
       onClose();
     } catch (error: any) {
