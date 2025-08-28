@@ -64,21 +64,15 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}.${fileExt}`;
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
       const filePath = `${user?.id}/${fileName}`;
 
       console.log('Starting avatar upload...', { filePath, fileSize: file.size });
 
-      // Add timeout to prevent infinite uploading
-      const uploadPromise = supabase.storage
+      // Upload without timeout - let it take the time it needs
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Upload timeout - please try again')), 15000); // 15 second timeout
-      });
-
-      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (uploadError) {
         console.error('Avatar upload error:', uploadError);
@@ -118,13 +112,6 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
     
     setLoading(true);
     
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.warn('Save operation timeout - forcing loading to false');
-      setLoading(false);
-      toast.error('Save operation timed out. Please try again.');
-    }, 10000); // 10 second timeout
-    
     try {
       const { error } = await updateProfile({
         username: formData.username,
@@ -134,8 +121,6 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       });
 
       if (error) throw error;
-
-      clearTimeout(timeoutId);
       
       // Force a profile refresh to ensure UI updates
       await refreshProfile();
@@ -143,8 +128,8 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       toast.success('Profile updated successfully!');
       onClose();
     } catch (error: any) {
-      clearTimeout(timeoutId);
-      toast.error(error.message);
+      console.error('Save profile error:', error);
+      toast.error(error.message || 'Failed to save profile changes');
     } finally {
       setLoading(false);
     }
