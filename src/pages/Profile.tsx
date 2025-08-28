@@ -55,7 +55,7 @@ const mockTaggedVideos = [
 
 
 const Profile = () => {
-  const { profile, loading } = useAuth();
+  const { profile, loading, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<"videos" | "shorts" | "tagged">("videos");
   const [showSettings, setShowSettings] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -96,7 +96,12 @@ const Profile = () => {
 
   // Get avatar URL from profile or fallback
   const getAvatarUrl = () => {
-    if (profile?.avatar_url) return profile.avatar_url;
+    if (profile?.avatar_url) {
+      // Add timestamp to prevent caching issues with updated avatars
+      return profile.avatar_url.includes('?') 
+        ? profile.avatar_url 
+        : `${profile.avatar_url}?t=${profile.updated_at || Date.now()}`;
+    }
     return "";
   };
 
@@ -323,7 +328,14 @@ const Profile = () => {
 
       <SettingsDialog isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
-      <EditProfileDialog isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} />
+      <EditProfileDialog 
+        isOpen={showEditProfile} 
+        onClose={() => {
+          setShowEditProfile(false);
+          // Force refresh the profile data after editing
+          refreshProfile();
+        }} 
+      />
     </div>
   );
 };

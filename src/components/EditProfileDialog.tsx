@@ -16,7 +16,7 @@ interface EditProfileDialogProps {
 }
 
 export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) => {
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -136,6 +136,10 @@ export const EditProfileDialog = ({ isOpen, onClose }: EditProfileDialogProps) =
       if (error) throw error;
 
       clearTimeout(timeoutId);
+      
+      // Force a profile refresh to ensure UI updates
+      await refreshProfile();
+      
       toast.success('Profile updated successfully!');
       onClose();
     } catch (error: any) {
